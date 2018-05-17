@@ -1,0 +1,23 @@
+{
+    "extends": "eslint:recommended",
+    "rules": {
+        "quotes": ["error", "double"],
+        "semi": ["error", "always"],
+        "no-console": "off",
+        "comma-dangle": ["error", "never"],
+        "one-var": "off",
+        "indent": ["error", 4],
+        "space-infix-ops": ["error"],
+        "strict": ["error", "global"]
+    },
+    "parserOptions": {
+        "ecmaVersion": 8
+    },
+    "env": {
+        "node": true,
+        "browser": true
+    },
+    "globals": {
+        "console": true
+    }
+}

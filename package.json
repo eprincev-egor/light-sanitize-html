@@ -1,0 +1,38 @@
+{
+    "name": "light-sanitize-html",
+    "version": "1.0.0",
+    "description": "Lightweight plugin for sanitize your html",
+    "main": "src/index.js",
+    "scripts": {
+        "test": "mocha ./tests/**/*-spec.js --exit"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/eprincev-egor/light-sanitize-html.git"
+    },
+    "keywords": [
+        "xss",
+        "strip",
+        "tags",
+        "html",
+        "sanitize"
+    ],
+    "author": "Eprincev Egor",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/eprincev-egor/light-sanitize-html/issues"
+    },
+    "homepage": "https://github.com/eprincev-egor/light-sanitize-html#readme",
+    "dependencies": {},
+    "devDependencies": {
+        "babel": "^6.23.0",
+        "babel-core": "^6.26.0",
+        "babel-loader": "^7.1.2",
+        "babel-preset-es2015": "^6.24.1",
+        "babel-preset-stage-0": "^6.24.1",
+        "glob": "^7.1.2",
+        "mocha": "^5.1.1",
+        "webpack": "^4.8.3",
+        "webpack-cli": "^2.1.3"
+    }
+}
