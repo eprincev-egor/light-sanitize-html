@@ -107,6 +107,11 @@ class Coach {
         while ( this.i < this.str.length ) {
             this.skipSpace();
             
+            let char = this.str[ this.i ];
+            if ( char == ">" ) {
+                break;
+            }
+            
             let start = this.i;
             let attrName = this.readAttrName();
             
