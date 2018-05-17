@@ -82,6 +82,12 @@ describe("check default banned tags", () => {
     // ANY variation for object
     testBannedTag("meta");
     
+    // ANY variation for applet
+    testBannedTag("applet");
+    
+    // ANY variation for canvas
+    testBannedTag("canvas");
+    
     // ANY variation for link
     testBannedTag("link");
     testTags("<link href = '/some' />", "");
