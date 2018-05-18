@@ -2,6 +2,7 @@
 
 const assert = require("assert");
 const sanitize = require("../src/index");
+if ( typeof window !== "undefined" ) { window.sanitize = sanitize; }
 
 function testTags(from, to) {
     it(from, () => {
@@ -51,28 +52,33 @@ describe("check attributes", () => {
     testTags("<IMG SRC=\"jav\0ascript:alert('XSS');\">", "<IMG >");
     testTags("<IMG SRC=\" &#14;  javascript:alert('XSS');\">", "<IMG >");
     
-    testTags("<SCRIPT/XSS SRC=\"http://xss.rocks/xss.js\"></SCRIPT>", "");
-    testTags("<BODY onload!#$%&()*~+-_.,:;?@[/|\\]^`=alert(\"XSS\")>", "");
-    testTags("<SCRIPT/SRC=\"http://xss.rocks/xss.js\"></SCRIPT>", "");
-    testTags("<<SCRIPT>alert(\"XSS\");//<</SCRIPT>", "alert(\"XSS\");//");
-    testTags("<SCRIPT SRC=http://xss.rocks/xss.js?< B >", "");
-    testTags("<SCRIPT SRC=//xss.rocks/.j>", "");
-    testTags("<IMG SRC=\"javascript:alert('XSS')\"", "");
-    testTags("<iframe src=http://xss.rocks/scriptlet.html <", "");
-    testTags("</script><script>alert('XSS');</script>", "alert('XSS');");
-    testTags("<INPUT TYPE=\"IMAGE\" SRC=\"javascript:alert('XSS');\">", "");
-    testTags("<BODY BACKGROUND=\"javascript:alert('XSS')\">", "");
+    testTags("1<SCRIPT/XSS SRC=\"http://xss.rocks/xss.js\"></SCRIPT>2", "12");
+    testTags("1<BODY onload!#$%&()*~+-_.,:;?@[/|\\]^`=alert(\"XSS\")>2", "12");
+    testTags("1<SCRIPT/SRC=\"http://xss.rocks/xss.js\"></SCRIPT>2", "12");
+    testTags("1<<SCRIPT>alert(\"XSS\");//<</SCRIPT>", "1alert(\"XSS\");//");
+    testTags("1<SCRIPT SRC=http://xss.rocks/xss.js?< B >", "1");
+    testTags("1<SCRIPT SRC=//xss.rocks/.j>2", "12");
+    testTags("1<IMG SRC=\"javascript:alert('XSS')\"", "1");
+    testTags("1<iframe src=http://xss.rocks/scriptlet.html <", "1");
+    testTags("1</script><script>alert('XSS');</script>", "1alert('XSS');");
+    testTags("1<INPUT TYPE=\"IMAGE\" SRC=\"javascript:alert('XSS');\">", "1");
+    testTags("1<BODY BACKGROUND=\"javascript:alert('XSS')\">", "1");
     testTags("<IMG DYNSRC=\"javascript:alert('XSS')\">", "<IMG >");
     testTags("<IMG LOWSRC=\"javascript:alert('XSS')\">", "<IMG >");
-    testTags("<STYLE>li {list-style-image: url(\"javascript:alert('XSS')\");}</STYLE><UL><LI>XSS</br>", "li {list-style-image: url(\"javascript:alert('XSS')\");}<UL><LI>XSS</br>");
+    testTags("1<STYLE>li {list-style-image: url(\"javascript:alert('XSS')\");}</STYLE><UL><LI>XSS</br>", "1li {list-style-image: url(\"javascript:alert('XSS')\");}<UL><LI>XSS</br>");
     testTags("<IMG SRC='vbscript:msgbox(\"XSS\")'>", "<IMG >");
     testTags("<IMG SRC=\"livescript:[code]\">", "<IMG >");
-    testTags("<svg/onload=alert('XSS')>", "");
-    testTags("<BGSOUND SRC=\"javascript:alert('XSS');\">", "");
+    testTags("1<svg/onload=alert('XSS')>2", "12");
+    testTags("1<BGSOUND SRC=\"javascript:alert('XSS');\">2", "12");
     // testTags("<BR SIZE=\"&{alert('XSS')}\">", "<BR >");
-    testTags("<LINK REL=\"stylesheet\" HREF=\"javascript:alert('XSS');\">", "");
-    testTags("<LINK REL=\"stylesheet\" HREF=\"http://xss.rocks/xss.css\">", "");
+    testTags("1<LINK REL=\"stylesheet\" HREF=\"javascript:alert('XSS');\">2", "12");
+    testTags("1<LINK REL=\"stylesheet\" HREF=\"http://xss.rocks/xss.css\">2", "12");
     testTags("<STYLE>@import'http://xss.rocks/xss.css';</STYLE>", "@import'http://xss.rocks/xss.css';");
-    // testTags("<META HTTP-EQUIV=\"Link\" Content=\"<http://xss.rocks/xss.css>; REL=stylesheet\">", "");
+    
+    testTags("1<META HTTP-EQUIV=\"Link\" Content=\"<http://xss.rocks/xss.css>; REL=stylesheet\">2", "12");
+    testTags("1<META HTTP-EQUIV=\"refresh\" CONTENT=\"0;url=javascript:alert('XSS');\">2", "12");
+    testTags("1<META HTTP-EQUIV=\"refresh\" CONTENT=\"0;url=data:text/html base64,PHNjcmlwdD5hbGVydCgnWFNTJyk8L3NjcmlwdD4K\">2", "12");
+    testTags("1¼script¾window.x¼/script¾2", "1window.x2");
+    // testTags("<div STYLE=\"xss:expression(alert('XSS'))\">", "<div >");
     
 });
