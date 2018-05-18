@@ -20,7 +20,7 @@ html == `
     
     <p>
         some image
-        
+        <img  >
     </p>
 `; // true
 

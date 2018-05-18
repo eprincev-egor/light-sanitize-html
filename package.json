@@ -1,6 +1,6 @@
 {
     "name": "light-sanitize-html",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "Lightweight plugin for sanitize your html",
     "main": "src/index.js",
     "scripts": {
