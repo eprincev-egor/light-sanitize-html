@@ -84,7 +84,7 @@ class Coach {
             
             // if tag is invalid, then just cut him
             // because clean html code cotain only valid tags
-            if ( char != ">" ) {
+            if ( char != ">" && char != "¾" ) {
                 this.cutTag(start);
             }
         }
@@ -94,12 +94,12 @@ class Coach {
     
     isTag() {
         let char = this.str[ this.i ];
-        return char == "<";
+        return char == "<" || char == "¼";
     }
     
     readTagName() {
         let char = this.str[ this.i ];
-        if ( char == "<" ) {
+        if ( char == "<" || char == "¼" ) {
             this.i++;
         }
         this.skipSpace();
@@ -114,7 +114,7 @@ class Coach {
         while ( this.i < this.str.length ) {
             let char = this.str[ this.i ];
             
-            if ( /\s|>|\//.test(char) ) {
+            if ( /\s|>|\/|¾/.test(char) ) {
                 break;
             } else {
                 tagName += char;
@@ -125,14 +125,42 @@ class Coach {
     }
     
     cutTag(start) {
-        while ( this.i < this.str.length ) {
-            let char = this.str[ this.i ];
-            if ( char == ">" ) {
-                break;
+        this._readToEndTag();
+        this.cutSubstring(start, this.i);
+    }
+    
+    _readToEndTag() {
+        if ( this.i >= this.str.length ) {
+            return;
+        }
+        
+        this.skipSpace();
+        
+        let char = this.str[ this.i ];
+        if ( char == "/" ) {
+            this.i++;
+            this.skipSpace();
+        }
+        
+        char = this.str[ this.i ];
+        if ( char == ">" || char == "¾" ) {
+            this.i++;
+            return;
+        }
+        
+        this.skipSpace();
+        
+        if ( this.isAttr() ) {
+            this.readAttrName();
+            
+            if ( this.isAttrValue() ) {
+                this.readAttrValue();
             }
+        } else {
             this.i++;
         }
-        this.cutSubstring(start, this.i + 1);
+        
+        this._readToEndTag();
     }
     
     stripAttributes(tagName, allowedAttributes) {
@@ -171,11 +199,28 @@ class Coach {
             }
         }
         
+        // cut danger css code:
+        // xss: expression(alert('XSS'))
+        // background-image: url(javascript:alert('XSS'))
+        if ( attrName == "style" ) {
+            if ( attrValue ) {
+                let isValidStyle = this.isValidStyle( attrValue );
+                if ( !isValidStyle ) {
+                    isValidAttr = false;
+                }
+            }
+        }
+        
         if ( !isValidAttr ) {
             this.cutSubstring(start, end);
         }
         
         this.stripAttributes(tagName, allowedAttributes);
+    }
+    
+    isValidStyle(style) {
+        style;
+        return true;
     }
     
     isValidURL(href) {
@@ -192,6 +237,10 @@ class Coach {
             return false;
         }
         /* eslint-enable */
+        
+        if ( /[¼¾]/.test(href) ) {
+            return false;
+        }
         
         // Clobber any comments in URLs, which the browser might
         // interpret inside an XML data island, allowing
@@ -237,7 +286,7 @@ class Coach {
                     this.i++;
                 }
             } else {
-                if ( /[\s>]/.test(char) ) {
+                if ( /[\s>¾]/.test(char) ) {
                     break;
                 } else {
                     value += char;
@@ -252,13 +301,6 @@ class Coach {
     isAttrValue() {
         let endPart = this.str.slice(this.i);
         return /^\s*=\s*/.test(endPart);
-    }
-    
-    skipTagName() {
-        // < word >
-        let startPosition = /^<\s*(\w+)[^\w]\s*/i.exec( this.str  );
-        startPosition = startPosition && startPosition[0].length || 0;
-        this.i = startPosition;
     }
     
     skipSpace() {
@@ -278,7 +320,7 @@ class Coach {
         while ( this.i < this.str.length ) {
             let char = this.str[ this.i ];
             
-            if ( /\s|=|>/.test(char) ) {
+            if ( /\s|=|>|¾/.test(char) ) {
                 break;
             } else {
                 attrName += char;
@@ -292,10 +334,10 @@ class Coach {
     isAttr() {
         let char = this.str[ this.i ];
         return (
-            // if chat is null, then test return true
+            // if char is null, then test return true
             // stop recursion
             char && 
-            /[^</>\s]/.test(char)
+            /[^</>\s¼¾]/.test(char)
         );
     }
     

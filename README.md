@@ -5,23 +5,16 @@ Lightweight plugin for sanitize your html
 ## Usage
 ```js
 const sanitize = require("light-sanitize-html");
-let html = `
-    <script>window.$ = false</script>
-    <style></style>
-    <p>
-        some image
-        <img src="javascript:alter('hello')" onerror="alert('world')">
-    </p>
-`;
 
-html = sanitize(html);
-html == `
-    window.$ = false
-    
-    <p>
-        some image
-        <img  >
-    </p>
-`; // true
+// erase open and close tags
+sanitize("<script>some</script>") == "some";
+sanitize("<script><script>some</script>") == "some";
+sanitize("<style>some</style>") == "some";
+
+// erase attribute with danger value
+sanitize("<img src=\"JaVaScRiPt:alert('home')\">") == "<img >";
+
+// erase danger attributes
+sanitize("<img onerror=alert('some')>") == "<img >";
 
 ```
