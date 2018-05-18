@@ -23,17 +23,22 @@ module.exports = {
         path: path.join(__dirname, "dist"),
         filename: "[name].js"
     },
-
+    
+    optimization: {
+        // We no not want to minimize our code.
+        minimize: false
+    },
+    
     module: {
         rules: [
-            {
-                exclude: /(node_modules)/,
-                test: /\.js$/,
-                loader: "babel-loader",
-                query: {
-                    presets: ["es2015"]
-                }
-            }
+            // {
+            //     exclude: /(node_modules)/,
+            //     test: /\.js$/,
+            //     loader: "babel-loader",
+            //     query: {
+            //         presets: ["es2015"]
+            //     }
+            // }
         ]
     }
 };

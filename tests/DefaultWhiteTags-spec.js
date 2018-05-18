@@ -59,6 +59,7 @@ describe("check default banned tags", () => {
     testBannedTag("script");
     testTags("<script src = '/some' />", "");
     testTags("<script src = '/some' >", "");
+    testTags("<SCRIPT SRC=http://xss.rocks/xss.js></SCRIPT>", "");
     
     // ANY variation for script
     testBannedTag("style");

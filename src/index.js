@@ -17,82 +17,16 @@ const allowedTags = [
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes
 const allowedAttributes = [
     "align", "alt", "bgcolor", "border", "class", "color",
-    "colspan", "dir", "headers", "height", "hidden", "href",
+    "colspan", "dir", "headers", "height", "hidden", "href", "size",
     "hreflang", "id", "lang", "rel", "reversed", "rowspan", "shape",
     "sizes", "spellcheck", "src", "srcset", "style",
-    "summary", "title", "translate", "type", "width"
+    "summary", "title", "translate", "type", "width",
+    "data", "data-*"
 ];
 
 function sanitize(html, options) {
-    options = options || {};
-    // custom allowed tags or global config
-    let allowedTags = options.allowedTags || sanitize.allowedTags;
-    if ( !allowedTags || !allowedTags.includes ) {
-        allowedTags = false;
-    }
-    // custom allowrd attributes or global config
-    let allowedAttributes = options.allowedAttributes || sanitize.allowedAttributes;
-    if ( !allowedAttributes || !allowedAttributes.includes ) {
-        allowedAttributes = false;
-    }
-    
-    return html.replace(/<[^>]+>/gi, tag => {
-        let isOpenTag = /^<\s*\w+[^\w]/i.test(tag);
-        let isCloseTag = /^<\s*\/\s*\w+[^\w]/i.test(tag);
-        let isInvalidTag = !isOpenTag && !isCloseTag;
-        
-        if ( isInvalidTag ) {
-            return "";
-        }
-        
-        if ( isCloseTag ) {
-            // < / div >
-            let isValidCloseTag = /^<\s*\/\s*\w+\s*>$/i.test(tag);
-            
-            if ( !isValidCloseTag ) {
-                return "";
-            }
-        }
-        
-        let tagName = getTagName(tag, isCloseTag);
-        
-        // check banned tags
-        let isWhiteTag;
-        if ( allowedTags === false ) {
-            isWhiteTag = true;
-        } else {
-            isWhiteTag = allowedTags.includes(tagName);
-        }
-        
-        if ( !isWhiteTag ) {
-            return "";
-        }
-        
-        if ( isOpenTag ) {
-            let coach = new Coach(tag);
-            tag = coach.stripAttributes( allowedAttributes );
-        }
-        
-        return tag;
-    });
-}
-
-function getTagName(tag, isCloseTag) {
-    let tagName;
-    
-    if ( isCloseTag ) {
-        // < / word>
-        tagName = /^<\s*\/\s*(\w+)[^\w]/i.exec(tag);
-    } else {
-        // < word >
-        tagName = /^<\s*(\w+)[^\w]/i.exec(tag);
-    }
-    tagName = tagName && tagName[1];
-    if ( !tagName ) { return ""; } // imposible
-    
-    tagName = tagName.toLowerCase();
-    
-    return tagName;
+    let coach = new Coach(html);
+    return coach.sanitize(options);
 }
 
 class Coach {
@@ -101,52 +35,214 @@ class Coach {
         this.i = 0;
     }
     
-    stripAttributes(allowedAttributes) {
-        this.skipTagName();
+    sanitize(options) {
+        options = options || {};
+        // custom allowed tags or global config
+        let allowedTags = options.allowedTags || sanitize.allowedTags;
+        if ( !allowedTags || !allowedTags.includes ) {
+            allowedTags = false;
+        }
+        // custom allowed attributes or global config
+        let allowedAttributes = options.allowedAttributes || sanitize.allowedAttributes;
+        if ( !allowedAttributes || !allowedAttributes.includes ) {
+            allowedAttributes = false;
+        }
         
+        // walk to tags
         while ( this.i < this.str.length ) {
-            this.skipSpace();
-            
-            let char = this.str[ this.i ];
-            if ( char == ">" ) {
-                break;
-            }
-            
-            let start = this.i;
-            let attrName = this.readAttrName();
-            
-            if ( this.isAttrValue() ) {
-                this.readAttrValue();
-            }
-            let end = this.i;
-            
-            // cut bad 
-            let isWhiteAttr = allowedAttributes.includes(attrName);
-            if ( !isWhiteAttr ) {
-                this.cutSubstring(start, end);
+            if ( !this.isTag() ) {
+                this.i++;
                 continue;
             }
             
-            this.i++;
+            // here we find tag
+            let start = this.i;
+            let tagName = this.readTagName();
+            
+            // check banned tags
+            let isWhiteTag;
+            if ( allowedTags === false ) {
+                isWhiteTag = true;
+            } else {
+                isWhiteTag = allowedTags.includes(tagName);
+            }
+            
+            // remove bad tag
+            if ( !isWhiteTag ) {
+                this.cutTag(start);
+                continue;
+            }
+            
+            this.stripAttributes(tagName, allowedAttributes);
+            
+            this.skipSpace();
+            let char = this.str[ this.i ];
+            if ( char == "/" ) {
+                this.i++;
+                this.skipSpace();
+            }
+            
+            // if tag is invalid, then just cut him
+            // because clean html code cotain only valid tags
+            if ( char != ">" ) {
+                this.cutTag(start);
+            }
         }
         
         return this.str;
     }
     
+    isTag() {
+        let char = this.str[ this.i ];
+        return char == "<";
+    }
+    
+    readTagName() {
+        let char = this.str[ this.i ];
+        if ( char == "<" ) {
+            this.i++;
+        }
+        this.skipSpace();
+        
+        char = this.str[ this.i ];
+        if ( char == "/" ) {
+            this.i++;
+            this.skipSpace();
+        }
+        
+        let tagName = "";
+        while ( this.i < this.str.length ) {
+            let char = this.str[ this.i ];
+            
+            if ( /\s|>|\//.test(char) ) {
+                break;
+            } else {
+                tagName += char;
+                this.i++;
+            }
+        }
+        return tagName.toLowerCase();
+    }
+    
+    cutTag(start) {
+        while ( this.i < this.str.length ) {
+            let char = this.str[ this.i ];
+            if ( char == ">" ) {
+                break;
+            }
+            this.i++;
+        }
+        this.cutSubstring(start, this.i + 1);
+    }
+    
+    stripAttributes(tagName, allowedAttributes) {
+        this.skipSpace();
+        
+        if ( !this.isAttr() ) {
+            return;
+        }
+        
+        let start = this.i;
+        let attrName = this.readAttrName();
+        let attrValue = null;
+        
+        if ( this.isAttrValue() ) {
+            attrValue = this.readAttrValue();
+        }
+        let end = this.i;
+        
+        // cut bad 
+        let isWhiteAttr = allowedAttributes.includes(attrName);
+        let isValidAttr = isWhiteAttr;
+        
+        // "<BR SIZE=\"&{alert('XSS')}\">"
+        // if ( tagName == "br" ) {
+        //     isValidAttr = false;
+        // }
+        
+        if ( attrName == "src" || attrName == "href" ) {
+            if ( attrValue ) {
+                let isValidURL = this.isValidURL( attrValue );
+                if ( !isValidURL ) {
+                    isValidAttr = false;
+                }
+            } else {
+                isValidAttr = false;
+            }
+        }
+        
+        if ( !isValidAttr ) {
+            this.cutSubstring(start, end);
+        }
+        
+        this.stripAttributes(tagName, allowedAttributes);
+    }
+    
+    isValidURL(href) {
+        // base on
+        // https://github.com/punkave/sanitize-html/blob/master/src/index.js
+        
+        
+        // Browsers ignore character codes of 32 (space) and below in a surprising
+        // number of situations. Start reading here:
+        // https://www.owasp.org/index.php/XSS_Filter_Evasion_Cheat_Sheet#Embedded_tab
+        
+        /* eslint-disable */
+        if ( /[\x00-\x20]/g.test(href) ) {
+            return false;
+        }
+        /* eslint-enable */
+        
+        // Clobber any comments in URLs, which the browser might
+        // interpret inside an XML data island, allowing
+        // a javascript: URL to be snuck through
+        if ( /<!--.*?-->/.test(href) ) {
+            return false;
+        }
+        
+        // <IMG SRC=JaVaScRiPt:alert('XSS')>
+        href = href.trim();
+        if ( !/^(#|http|\/)/.test(href) ) {
+            return false;
+        }
+        
+        return true;
+    }
+    
     readAttrValue() {
         this.skipSpace();
-        this.i++; // skip =
-        this.skipSpace();
+        let char = this.str[ this.i ];
+        if ( char == "=" ) {
+            this.i++; // skip =
+            this.skipSpace();
+        }
+        
+        char = this.str[ this.i ];
+        let quotes = false;
+        if ( char == "\"" || char == "'" || char == "`" ) {
+            quotes = char;
+            this.i++;
+        }
         
         let value = "";
         while ( this.i < this.str.length ) {
             let char = this.str[ this.i ];
             
-            if ( /\s/.test(char) ) {
-                return value;
+            if ( quotes ) {
+                if ( quotes == char ) {
+                    this.i++;
+                    break;
+                } else {
+                    value += char;
+                    this.i++;
+                }
             } else {
-                value += char;
-                this.i++;
+                if ( /[\s>]/.test(char) ) {
+                    break;
+                } else {
+                    value += char;
+                    this.i++;
+                }
             }
         }
         
@@ -182,13 +278,25 @@ class Coach {
         while ( this.i < this.str.length ) {
             let char = this.str[ this.i ];
             
-            if ( /\s|=/.test(char) ) {
-                return attrName;
+            if ( /\s|=|>/.test(char) ) {
+                break;
             } else {
                 attrName += char;
                 this.i++;
             }
         }
+        
+        return attrName.toLowerCase();
+    }
+    
+    isAttr() {
+        let char = this.str[ this.i ];
+        return (
+            // if chat is null, then test return true
+            // stop recursion
+            char && 
+            /[^</>\s]/.test(char)
+        );
     }
     
     cutSubstring(start, end) {
