@@ -3,7 +3,7 @@
 const assert = require("assert");
 const sanitize = require("../src/index");
 
-function testTag(from, to) {
+function testTags(from, to) {
     it(from, () => {
         let result = sanitize(from);
         
